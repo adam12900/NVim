@@ -121,7 +121,7 @@ require('lazy').setup({
       options = {
         icons_enabled = false,
         theme = 'dracula',
-        component_separators = '/',
+        component_separators = '|',
         section_separators = '',
       },
     },
@@ -185,6 +185,17 @@ require('lazy').setup({
 
 -- custom plugins 
 
+-- nvim-dap + dependencies
+
+  {'mfussenegger/nvim-dap'},
+  {'theHamsta/nvim-dap-virtual-text', dependencies = {'mfussenegger/nvim-dap'}},
+  {'rcarriga/nvim-dap-ui', dependencies = {'mfussenegger/nvim-dap', 'ChristianChiarulli/neovim-codicons'}},
+
+
+--rust-tools
+
+  {'simrat39/rust-tools.nvim'},
+
 --Dashboard 
 {
   'glepnir/dashboard-nvim',
@@ -192,6 +203,7 @@ require('lazy').setup({
   config = function()
     require('dashboard').setup {
       -- config
+      theme = 'hyper'
     }
   end,
   dependencies = { {'nvim-tree/nvim-web-devicons'}},
@@ -207,6 +219,13 @@ require('lazy').setup({
 --  tag = 'nightly' -- optional, updated every week. (see issue #1193)
 },
 
+--       Indent line gods
+  {"lukas-reineke/indent-blankline.nvim"},
+
+
+
+--Codicans 
+  {'ChristianChiarulli/neovim-codicons'},
 
 
 }, {})
@@ -216,12 +235,64 @@ require('lazy').setup({
 
 -- custom settings
 
+--rust-tools plugin
+
+local rt = require("rust-tools")
+
+  rt.setup({
+    server = {
+     on_attach = function (_, bufnr)
+      vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, {buffer = bufnr})
+      vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, {buffer = bufnr}) 
+     end,
+  }
+})
+
+  --dapui settings
+  require("neodev").setup({
+  library = {plugins = { 'nvim-dap-ui' }, types = true }, })
+  require('dapui').setup()
+  require('dapui').close()
+
+  local dap, dapui = require('dap'), require('dapui')
+    dap.listeners.after.event_initialized["dapui_config"] = function()
+      dapui.open()
+    end
+    dap.listeners.before.event_terminated["dapui_config"] = function()
+      dapui.close()
+    end
+    dap.listeners.before.event_exited["dapui_config"] = function()
+      dap.close()
+    end
+
+
+
+  --dap debugger
+
+
+--     indent_blankline
+vim.opt.termguicolors = true;
+vim.opt.list = true
+--vim.opt.listchars:append "space:⋅"
+vim.cmd[[highlight IndentBlankLineIndent1 guifg=#6272a4 gui=nocombine]]
+vim.opt.listchars:append "eol:↴"
+
+require("indent_blankline").setup {
+    space_char_blankline = " ",
+    show_current_context = true,
+    char_highlight_list = {"IndentBlankLineIndent1",},
+    --show_current_context_start = true,
+}
+
+
 -- Nvim Tree 
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
 -- set termguicolors to enable highlight groups
 vim.opt.termguicolors = true
+vim.cmd[[highlight CmpItemAbbrDefault guifg=#6272a4]]
+
 
 -- empty setup using defaults
 require("nvim-tree").setup()
@@ -335,7 +406,7 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 -- See `:help nvim-treesitter`
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'help', 'vim' },
+  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'help', 'vim', 'toml' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
   auto_install = false,
