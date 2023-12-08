@@ -90,7 +90,7 @@ require('lazy').setup({
       },
     },
   },
-  
+
   {
     'voidekh/kyotonight.vim',
     config = function()
@@ -98,15 +98,16 @@ require('lazy').setup({
     end,
   },
 
-  { -- Add indentation guides even on blank lines
-    'lukas-reineke/indent-blankline.nvim',
-    -- Enable `lukas-reineke/indent-blankline.nvim`
-    -- See `:help indent_blankline.txt`
-    opts = {
-      char = '┊',
-      show_trailing_blankline_indent = false,
-    },
-  },
+-- { -- Add indentation guides even on blank lines
+----
+--   -- Enable `lukas-reineke/indent-blankline.nvim`
+--   -- See `:help indent_blankline.txt`
+----   main = "ibl",
+----   opts = {
+----     char = '┊',
+----     show_trailing_blankline_indent = false,
+----   },
+---- },
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
@@ -149,6 +150,8 @@ require('lazy').setup({
 
   {'simrat39/rust-tools.nvim'},
 
+-- nvim tower defense
+  { 'efueyo/td.nvim' },
 --Dashboard 
 {
   'glepnir/dashboard-nvim',
@@ -172,10 +175,6 @@ require('lazy').setup({
 --  tag = 'nightly' -- optional, updated every week. (see issue #1193)
 },
 
---       Indent line gods
-  {"lukas-reineke/indent-blankline.nvim"},
-
-
 
 --Codicans 
   {'ChristianChiarulli/neovim-codicons'},
@@ -183,6 +182,16 @@ require('lazy').setup({
   {'andweeb/presence.nvim'},
 
 
+--    Makrdown
+ {
+    'iamcco/markdown-preview.nvim',
+    config = function()
+      vim.fn["mkdp#util#install"]()
+    end,
+},
+
+
+{'mfussenegger/nvim-lint'},
 
 }, {})
 
@@ -223,23 +232,12 @@ local rt = require("rust-tools")
     end
 
 
+  --
 
   --dap debugger
 
 
 --     indent_blankline
-vim.opt.termguicolors = true;
-vim.opt.list = true
---vim.opt.listchars:append "space:⋅"
-vim.cmd[[highlight IndentBlankLineIndent1 guifg=#6272a4 gui=nocombine]]
-vim.opt.listchars:append "eol:↴"
-
-require("indent_blankline").setup {
-    space_char_blankline = " ",
-    show_current_context = true,
-    char_highlight_list = {"IndentBlankLineIndent1",},
-    --show_current_context_start = true,
-}
 
 
 -- Nvim Tree 
@@ -266,7 +264,11 @@ require("nvim-tree").setup({
 })
 
 
-
+-- set linter
+require('lint').try_lint()
+require('lint').linters_by_ft = {
+  markdown = {'vale',}
+}
 -- Set highlight on search
 vim.o.hlsearch = false
 
@@ -366,7 +368,7 @@ require('nvim-treesitter.configs').setup {
   ensure_installed = {"lua", "rust", "toml" },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
-  auto_install = true,
+  auto_install = false,
 
   highlight = { enable = true },
   indent = { enable = true },
