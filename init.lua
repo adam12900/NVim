@@ -28,7 +28,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
@@ -131,6 +131,7 @@ require('lazy').setup({
 
   { 'navarasu/onedark.nvim' },
   { 'rose-pine/neovim' },
+  { 'andweeb/presence.nvim' },
 
   {
     -- Set lualine as statusline
@@ -157,7 +158,7 @@ require('lazy').setup({
   },
 
   -- "gc" to comment visual regions/lines
-  { 'numToStr/Comment.nvim', opts = {} },
+  { 'numToStr/Comment.nvim',           opts = {} },
 
   -- Fuzzy Finder (files, lsp, etc)
   {
@@ -206,11 +207,41 @@ require('lazy').setup({
   },
 
   {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+    -- Optional dependencies
+    dependencies = { { "echasnovski/mini.icons", opts = {} } },
+    -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
+  },
+
+  {
     'nvim-tree/nvim-tree.lua',
     dependencies = { 'nvim-tree/nvim-web-devicons' }
+  },
+
+  { 'mfussenegger/nvim-dap' },
+  { 'theHamsta/nvim-dap-virtual-text', dependencies = { 'mfussenegger/nvim-dap' } },
+  { 'rcarriga/nvim-dap-ui',            dependencies = { 'mfussenegger/nvim-dap', 'ChristianChiarulli/neovim-codicons' } },
+  { "nvim-neotest/nvim-nio" },
+
+  --rust-tools
+
+  { 'simrat39/rust-tools.nvim' },
+
+  { 'onsails/lspkind.nvim' },
+
+  {
+    "folke/zen-mode.nvim",
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    }
   }
 
-  }, {})
+}, {})
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -233,6 +264,35 @@ vim.cmd('colorscheme rose-pine')
 vim.cmd('set tabstop=2')
 vim.cmd('set shiftwidth=2')
 vim.cmd('set expandtab')
+
+
+local rt = require("rust-tools")
+rt.setup({
+  server = {
+    on_attach = function(_, bufnr)
+      vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
+      vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
+    end,
+  }
+})
+
+--dapui settings
+require("neodev").setup({
+  library = { plugins = { 'nvim-dap-ui' }, types = true }, })
+require('dapui').setup()
+require('dapui').close()
+
+local dap, dapui = require('dap'), require('dapui')
+dap.listeners.after.event_initialized["dapui_config"] = function()
+  dapui.open()
+end
+dap.listeners.before.event_terminated["dapui_config"] = function()
+  dapui.close()
+end
+dap.listeners.before.event_exited["dapui_config"] = function()
+  dap.close()
+end
+
 
 -- [[ Basic Keymaps ]]
 
@@ -517,6 +577,7 @@ mason_lspconfig.setup_handlers {
 -- See `:help cmp`
 local cmp = require 'cmp'
 local luasnip = require 'luasnip'
+local lspkind = require 'lspkind'
 require('luasnip.loaders.from_vscode').lazy_load()
 luasnip.config.setup {}
 
@@ -526,9 +587,12 @@ cmp.setup {
       luasnip.lsp_expand(args.body)
     end,
   },
+
   completion = {
     completeopt = 'menu,menuone,noinsert',
+    keyword_length = 0,
   },
+
   mapping = cmp.mapping.preset.insert {
     ['<C-n>'] = cmp.mapping.select_next_item(),
     ['<C-p>'] = cmp.mapping.select_prev_item(),
@@ -559,15 +623,47 @@ cmp.setup {
     end, { 'i', 's' }),
   },
   sources = {
-    { name = 'nvim_lsp' },
-    { name = 'luasnip' },
-    { name = 'path' },
+    { name = 'nvim_lsp', max_item_count = 10, },
+    { name = 'luasnip', },
+    { name = 'path', keyword_length = 4},
   },
+
+
   window = {
-    completion = cmp.config.window.bordered(),
-    documentation = cmp.config.window.bordered(),
-    winhighlight = "Normal:Pmenu,FloatBorder:Pmenu,CursorLine:PmenuSel,Search:None",
-  }
+    completion = {
+      border = 'rounded',
+      max_width = 30,
+
+    },
+    documentation = {
+      winhighlight = "Normal:Normal,FloatBorder:Pmenu,CursorLine:Visual,Search:PmenuSel",
+      max_height = 30,
+      max_width = 40,
+      border = 'rounded'
+    }
+  },
+  view = {
+    entries = {
+      name = "custom",
+      selection_order = "near_cursor",
+      follow_cursor = false,
+    },
+  },
+
+  ---@diagnostic disable-next-line: missing-fields
+  formatting = {
+    format = lspkind.cmp_format({
+      mode = "symbol_text",
+      ellipsis_char = "...",
+      before = function (_entry, vim_item)
+          if vim_item.menu ~= nil and string.len(vim_item.menu) > 0 then
+            vim_item.menu = string.sub(vim_item.menu, 1, 0) .. ""
+          end
+        return vim_item
+      end
+
+    })
+  },
 }
 
 -- disable netrw at the very start of your init.lua
@@ -595,6 +691,8 @@ require("nvim-tree").setup({
     dotfiles = true,
   },
 })
+
+require("oil").setup()
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
 --
